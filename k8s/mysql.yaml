@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: todo
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: root123
+  MYSQL_DATABASE: tododb
+  MYSQL_USER: todo
+  MYSQL_PASSWORD: todo123
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-mysql
+  namespace: todo
+spec:
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: todo-mysql
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: todo-mysql
+  namespace: todo
+spec:
+  serviceName: todo-mysql
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: todo-mysql
+
+  template:
+    metadata:
+      labels:
+        app: todo-mysql
+
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-proxy-2
+
+      containers:
+        - name: mysql
+          image: mysql:8.4
+
+          ports:
+            - containerPort: 3306
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
+
+            - name: MYSQL_DATABASE
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_DATABASE
+
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_USER
+
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_PASSWORD
+
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+
+      volumes:
+        - name: mysql-data
+          hostPath:
+            path: /data/todo-mysql
+            type: DirectoryOrCreate

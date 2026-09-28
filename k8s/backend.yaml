@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+  namespace: todo
+spec:
+  replicas: 2
+
+  selector:
+    matchLabels:
+      app: todo-backend
+
+  template:
+    metadata:
+      labels:
+        app: todo-backend
+
+    spec:
+      containers:
+        - name: todo-backend
+          image: ramakrishnapanda2001/todo-backend:1.0
+
+          ports:
+            - containerPort: 8080
+
+          env:
+            - name: DB_URL
+              value: jdbc:mysql://todo-mysql:3306/tododb
+
+            - name: DB_USERNAME
+              value: todo
+
+            - name: DB_PASSWORD
+              value: todo123
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-backend
+  namespace: todo
+spec:
+  type: ClusterIP
+
+  selector:
+    app: todo-backend
+
+  ports:
+    - port: 8080
+      targetPort: 8080
